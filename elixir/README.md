@@ -24,22 +24,24 @@ end
 
 ```elixir
 # Create a new Tailscale instance
-ts = Tailscale.new()
+{:ok, ts} = Tailscale.new()
 
 # Configure the instance
-ts
-|> Tailscale.set_hostname("my-elixir-app")
-|> Tailscale.set_ephemeral(true)
-|> Tailscale.set_auth_key("tskey-your-auth-key")
+:ok = Tailscale.set_hostname(ts, "my-elixir-app")
+:ok = Tailscale.set_ephemeral(ts, true)
+:ok = Tailscale.set_auth_key(ts, "tskey-your-auth-key")
 
 # Connect to Tailscale network (blocks until connected)
-Tailscale.up(ts)
+:ok = Tailscale.up(ts)
 
 # Create a listener
-listener = Tailscale.listen(ts, "tcp", ":8080")
+{:ok, listener} = Tailscale.listen(ts, "tcp", ":8080")
 
-# Accept connections
-socket = Tailscale.accept(listener)
+# Accept connections (socket is a port/file descriptor)
+{:ok, socket} = Tailscale.Listener.accept(listener)
+
+# socket is already a port that can be used directly with :gen_tcp
+# No need for additional conversion with :gen_tcp.connect
 
 # Receive data
 {:ok, data} = :gen_tcp.recv(socket, 0)
@@ -49,8 +51,8 @@ socket = Tailscale.accept(listener)
 
 # Close everything when done
 :ok = :gen_tcp.close(socket)
-Tailscale.close(listener)
-Tailscale.close(ts)
+:ok = Tailscale.Listener.close(listener)
+:ok = Tailscale.close(ts)
 ```
 
 See the `examples` directory for more usage examples.

@@ -53,22 +53,24 @@ defmodule Tailscale.LocalAPI do
       {"Authorization", "Basic " <> Base.encode64(":" <> client.credential)}
     ]
 
-    # This is a placeholder - in a real implementation we would use HTTPoison or similar
-    # but we're keeping external dependencies minimal for this example
-    case do_request(method, url, headers, body) do
-      {:ok, %{status_code: 200, body: body}} ->
-        {:ok, Jason.decode!(body)}
-      {:ok, %{status_code: status, body: body}} ->
-        {:error, "HTTP error: #{status} #{body}"}
+    req_options = [
+      method: method,
+      url: url,
+      headers: headers
+    ]
+
+    # Add body to options if provided
+    req_options = if body, do: Keyword.put(req_options, :json, body), else: req_options
+
+    case Req.request(req_options) do
+      {:ok, %Req.Response{status: 200, body: body}} ->
+        {:ok, body}
+      {:ok, %Req.Response{status: status, body: body}} ->
+        {:error, "HTTP error: #{status} #{inspect(body)}"}
+      {:error, %Req.HTTPError{} = error} ->
+        {:error, error}
       {:error, reason} ->
         {:error, reason}
     end
-  end
-
-  # Placeholder for actual HTTP implementation
-  defp do_request(method, url, headers, body) do
-    # In a real implementation, this would use HTTPoison or a similar HTTP client
-    # For now, we'll just pretend and return an error
-    {:error, :not_implemented}
   end
 end

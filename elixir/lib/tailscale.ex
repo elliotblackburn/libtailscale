@@ -12,8 +12,8 @@ defmodule Tailscale do
   defstruct [:reference]
 
   @type t :: %__MODULE__{
-    reference: reference()
-  }
+          reference: reference()
+        }
 
   @doc """
   Create a new Tailscale instance.
@@ -29,6 +29,7 @@ defmodule Tailscale do
     case NIF.tailscale_new() do
       {:ok, reference} ->
         {:ok, %__MODULE__{reference: reference}}
+
       {:error, reason} ->
         {:error, Error.new("Failed to create Tailscale instance", reason)}
     end
@@ -47,7 +48,9 @@ defmodule Tailscale do
   @spec start(t()) :: :ok | {:error, Error.t()}
   def start(%__MODULE__{reference: reference}) do
     case NIF.tailscale_start(reference) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} ->
         {:error, Error.new("Failed to start Tailscale", reason)}
     end
@@ -67,9 +70,12 @@ defmodule Tailscale do
   @spec up(t()) :: :ok | {:error, Error.t()}
   def up(%__MODULE__{reference: reference}) do
     case NIF.tailscale_up(reference) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} when is_atom(reason) ->
         {:error, Error.new("Failed to bring Tailscale up", reason)}
+
       {:error, msg} when is_binary(msg) ->
         {:error, Error.new(msg)}
     end
@@ -88,7 +94,9 @@ defmodule Tailscale do
   @spec close(t()) :: :ok | {:error, Error.t()}
   def close(%__MODULE__{reference: reference}) do
     case NIF.tailscale_close(reference) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} ->
         {:error, Error.new("Failed to close Tailscale", reason)}
     end
@@ -107,7 +115,9 @@ defmodule Tailscale do
   @spec set_dir(t(), String.t()) :: :ok | {:error, Error.t()}
   def set_dir(%__MODULE__{reference: reference}, dir) do
     case NIF.tailscale_set_dir(reference, dir) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} ->
         {:error, Error.new("Failed to set Tailscale directory", reason)}
     end
@@ -125,8 +135,12 @@ defmodule Tailscale do
   """
   @spec set_hostname(t(), String.t()) :: :ok | {:error, Error.t()}
   def set_hostname(%__MODULE__{reference: reference}, hostname) do
-    case NIF.tailscale_set_hostname(reference, hostname) do
-      :ok -> :ok
+    hostname_char = String.to_charlist(hostname)
+
+    case NIF.tailscale_set_hostname(reference, hostname_char) do
+      :ok ->
+        :ok
+
       {:error, reason} ->
         {:error, Error.new("Failed to set Tailscale hostname", reason)}
     end
@@ -144,8 +158,12 @@ defmodule Tailscale do
   """
   @spec set_auth_key(t(), String.t()) :: :ok | {:error, Error.t()}
   def set_auth_key(%__MODULE__{reference: reference}, auth_key) do
-    case NIF.tailscale_set_authkey(reference, auth_key) do
-      :ok -> :ok
+    auth_key_char = String.to_charlist(auth_key)
+
+    case NIF.tailscale_set_authkey(reference, auth_key_char) do
+      :ok ->
+        :ok
+
       {:error, reason} ->
         {:error, Error.new("Failed to set Tailscale auth key", reason)}
     end
@@ -163,8 +181,12 @@ defmodule Tailscale do
   """
   @spec set_control_url(t(), String.t()) :: :ok | {:error, Error.t()}
   def set_control_url(%__MODULE__{reference: reference}, control_url) do
-    case NIF.tailscale_set_control_url(reference, control_url) do
-      :ok -> :ok
+    control_url_char = String.to_charlist(control_url)
+
+    case NIF.tailscale_set_control_url(reference, control_url_char) do
+      :ok ->
+        :ok
+
       {:error, reason} ->
         {:error, Error.new("Failed to set Tailscale control URL", reason)}
     end
@@ -183,9 +205,11 @@ defmodule Tailscale do
   @spec set_ephemeral(t(), boolean()) :: :ok | {:error, Error.t()}
   def set_ephemeral(%__MODULE__{reference: reference}, ephemeral) do
     ephemeral_int = if ephemeral, do: 1, else: 0
-    
+
     case NIF.tailscale_set_ephemeral(reference, ephemeral_int) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} ->
         {:error, Error.new("Failed to set Tailscale ephemeral mode", reason)}
     end
@@ -205,7 +229,9 @@ defmodule Tailscale do
   @spec set_log_fd(t(), integer() | File.io_device()) :: :ok | {:error, Error.t()}
   def set_log_fd(%__MODULE__{reference: reference}, fd) when is_integer(fd) do
     case NIF.tailscale_set_logfd(reference, fd) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} ->
         {:error, Error.new("Failed to set Tailscale log FD", reason)}
     end
@@ -228,15 +254,20 @@ defmodule Tailscale do
   """
   @spec dial(t(), String.t(), String.t()) :: {:ok, :inet.socket()} | {:error, Error.t()}
   def dial(%__MODULE__{reference: reference}, network, addr) do
-    case NIF.tailscale_dial(reference, network, addr) do
+    network_char = String.to_charlist(network)
+    addr_char = String.to_charlist(addr)
+
+    case NIF.tailscale_dial(reference, network_char, addr_char) do
       {:ok, fd} ->
         # Convert the file descriptor into a socket that can be used with gen_tcp
         case :erlang.open_port({:fd, fd, fd}, [:binary]) do
           port when is_port(port) ->
             {:ok, port}
+
           _ ->
             {:error, Error.new("Failed to open port for socket")}
         end
+
       {:error, reason} ->
         {:error, Error.new("Failed to dial", reason)}
     end
@@ -254,9 +285,13 @@ defmodule Tailscale do
   """
   @spec listen(t(), String.t(), String.t()) :: {:ok, Listener.t()} | {:error, Error.t()}
   def listen(%__MODULE__{reference: reference}, network, addr) do
-    case NIF.tailscale_listen(reference, network, addr) do
+    network_char = String.to_charlist(network)
+    addr_char = String.to_charlist(addr)
+
+    case NIF.tailscale_listen(reference, network_char, addr_char) do
       {:ok, listener_ref} ->
         {:ok, %Listener{reference: listener_ref, server: self()}}
+
       {:error, reason} ->
         {:error, Error.new("Failed to create listener", reason)}
     end
@@ -275,7 +310,9 @@ defmodule Tailscale do
   @spec get_ips(t()) :: {:ok, String.t()} | {:error, Error.t()}
   def get_ips(%__MODULE__{reference: reference}) do
     case NIF.tailscale_getips(reference, 1024) do
-      {:ok, ips} -> {:ok, ips}
+      {:ok, ips} ->
+        {:ok, ips}
+
       {:error, reason} ->
         {:error, Error.new("Failed to get Tailscale IPs", reason)}
     end
@@ -296,6 +333,7 @@ defmodule Tailscale do
     case NIF.tailscale_loopback(reference, 1024) do
       {:ok, {addr, proxy_cred, local_api_cred}} ->
         {:ok, {addr, proxy_cred, local_api_cred}}
+
       {:error, reason} ->
         {:error, Error.new("Failed to start loopback server", reason)}
     end
@@ -316,6 +354,7 @@ defmodule Tailscale do
     case loopback(ts) do
       {:ok, {addr, _proxy_cred, local_api_cred}} ->
         {:ok, LocalAPI.Client.new(addr, local_api_cred)}
+
       error ->
         error
     end
@@ -334,7 +373,9 @@ defmodule Tailscale do
   @spec enable_funnel(t(), integer()) :: :ok | {:error, Error.t()}
   def enable_funnel(%__MODULE__{reference: reference}, port) do
     case NIF.tailscale_enable_funnel(reference, port) do
-      :ok -> :ok
+      :ok ->
+        :ok
+
       {:error, reason} ->
         {:error, Error.new("Failed to enable Tailscale funnel", reason)}
     end
@@ -353,7 +394,9 @@ defmodule Tailscale do
   @spec error_message(t()) :: {:ok, String.t()} | {:error, Error.t()}
   def error_message(%__MODULE__{reference: reference}) do
     case NIF.tailscale_errmsg(reference, 1024) do
-      {:ok, msg} -> {:ok, msg}
+      {:ok, msg} ->
+        {:ok, msg}
+
       {:error, reason} ->
         {:error, Error.new("Failed to get error message", reason)}
     end

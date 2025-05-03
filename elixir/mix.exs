@@ -27,7 +27,9 @@ defmodule Tailscale.MixProject do
   defp deps do
     [
       {:elixir_make, "~> 0.7", runtime: false},
-      {:ex_doc, "~> 0.29", only: :dev, runtime: false}
+      {:ex_doc, "~> 0.29", only: :dev, runtime: false},
+      {:req, "~> 0.5.10"},
+      {:jason, "~> 1.4.4"}
     ]
   end
 
